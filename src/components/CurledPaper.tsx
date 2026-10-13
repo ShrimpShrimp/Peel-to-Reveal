@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PAPER_BOUNDS, PERSPECTIVE } from '../geometry/paperStack';
 import type { PaperPose } from '../interaction/fling';
 import { curlFromPose, curlPatches, paperEdge, paperPoint, peelFrame, returnFrame, PEEL_DURATION, RETURN_DURATION } from '../interaction/paperCurl';
@@ -13,10 +14,11 @@ type Props = {
   pose: PaperPose;
   animation?: PeelAnimation;
   returning: boolean;
+  foreground: SVGGElement | null;
   onFinish: (run: number) => void;
 };
 
-export function CurledPaper({ id, mask, color, vertical, pose, animation, returning, onFinish }: Props) {
+export function CurledPaper({ id, mask, color, vertical, pose, animation, returning, foreground, onFinish }: Props) {
   const held = curlFromPose(pose);
   const [motion, setMotion] = useState<CurlFrame>(held);
   const finish = useRef(onFinish);
@@ -49,6 +51,25 @@ export function CurledPaper({ id, mask, color, vertical, pose, animation, return
   const patches = curlPatches(frame, vertical);
   const creaseX = frame.direction === 'left' ? 400 * (1 - frame.progress) : 400 * frame.progress;
   const crease = paperPoint(creaseX, 175, frame, vertical);
+  const renderPatches = (lifted: boolean) => patches.filter(patch => patch.lifted === lifted).map(patch => (
+    <g key={patch.key} transform={`matrix(${patch.matrix.join(' ')})`} data-paper-surface={lifted ? 'lifted' : 'adhered'}>
+      <g clipPath={`url(#${id}-${patch.key})`}>
+        <use href={`#${id}-face`} />
+        <g mask={`url(#${mask})`}>
+          <path d={PAPER_BOUNDS} fill="#654a35" opacity={patch.shade} />
+          {patch.back && <path d={PAPER_BOUNDS} fill="#fffdf4" opacity=".10" />}
+        </g>
+      </g>
+    </g>
+  ));
+  const liftedPaper = (
+    <g className="curled-paper-lifted" pointerEvents="none" opacity={frame.opacity}>
+      {renderPatches(true)}
+      <path d={paperEdge(frame, vertical, 'lifted')} fill="none" stroke="#7e6249" strokeOpacity=".18" strokeWidth=".7" />
+    </g>
+  );
+  // One motion controller drives both depths. The portal moves only the lifted
+  // mesh above the sculpture; attached paper and pointer capture stay in place.
   return (
     <g className="curled-paper" pointerEvents="none" opacity={frame.opacity}
       data-curl-progress={frame.progress.toFixed(3)} data-curl-direction={frame.direction}
@@ -67,18 +88,11 @@ export function CurledPaper({ id, mask, color, vertical, pose, animation, return
       <g transform={`translate(${frame.exitX} ${vertical}) ${PERSPECTIVE}`} opacity={1 - Math.abs(frame.exitX) / 650}>
         <ellipse cx={creaseX} cy="175" rx="10" ry="160" fill="#624932" opacity=".13" filter={`url(#${id}-contact-shadow)`} />
       </g>
-      {patches.map(patch => <g key={patch.key} transform={`matrix(${patch.matrix.join(' ')})`}>
-        <g clipPath={`url(#${id}-${patch.key})`}>
-          <use href={`#${id}-face`} />
-          <g mask={`url(#${mask})`}>
-            <path d={PAPER_BOUNDS} fill="#654a35" opacity={patch.shade} />
-            {patch.back && <path d={PAPER_BOUNDS} fill="#fffdf4" opacity=".10" />}
-          </g>
-        </g>
-      </g>)}
-      <path d={paperEdge(frame, vertical)} fill="none" stroke="#7e6249" strokeOpacity=".18" strokeWidth=".7" />
+      {renderPatches(false)}
+      <path d={paperEdge(frame, vertical, 'adhered')} fill="none" stroke="#7e6249" strokeOpacity=".18" strokeWidth=".7" />
       <path d={`M ${crease.x - 52.5} ${crease.y + 138.25} L ${crease.x + 52.5} ${crease.y - 138.25}`}
         stroke="#735740" strokeOpacity=".04" strokeWidth="1" />
+      {foreground ? createPortal(liftedPaper, foreground) : liftedPaper}
     </g>
   );
 }

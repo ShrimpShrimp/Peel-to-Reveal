@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { PAPER_BOUNDS, PERSPECTIVE } from '../geometry/paperStack';
 import type { PaperStack } from '../geometry/paperStack';
 import type { PaperScene } from '../geometry/scenes';
@@ -33,6 +33,7 @@ export function PaperSculpture({ scene, stack, peeled, animation, resetRevision,
   const total = peelSequence.length;
   const id = useId().replaceAll(':', '');
   const buttonRef = useRef<SVGGElement>(null);
+  const [curlOverlay, setCurlOverlay] = useState<SVGGElement | null>(null);
   const keyboardPeel = useRef(false);
   const active = peelSequence[peeled];
   const complete = peeled === total;
@@ -97,7 +98,8 @@ export function PaperSculpture({ scene, stack, peeled, animation, resetRevision,
             {!removed && !inlay && (
               <g data-flying={flying || undefined}>
                 {pose ? <CurledPaper id={`${id}-curl-${layer.id}`} mask={`${id}-outer-${layer.id}`} color={layer.color}
-                  vertical={vertical} pose={pose} animation={flying ? animation : undefined} returning={!!returning} onFinish={onFinish} /> : <>
+                  vertical={vertical} pose={pose} animation={flying ? animation : undefined} returning={!!returning}
+                  foreground={curlOverlay} onFinish={onFinish} /> : <>
                   <g transform={`translate(0 ${vertical + thickness}) ${PERSPECTIVE}`}>
                     <g mask={`url(#${id}-outer-${layer.id})`}>
                       <path d={PAPER_BOUNDS} fill={layer.color} />
@@ -132,6 +134,8 @@ export function PaperSculpture({ scene, stack, peeled, animation, resetRevision,
           </g>
         );
       })}
+      {/* Lifted material must paint after every retained sculpture slice and shadow. */}
+      <g ref={setCurlOverlay} data-paper-foreground="true" pointerEvents="none" />
     </svg>
   );
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { curlPatches, paperPoint, peelFrame, returnFrame } from '../src/interaction/paperCurl.ts';
+import { curlPatches, paperEdge, paperPoint, peelFrame, returnFrame } from '../src/interaction/paperCurl.ts';
 import type { CurlFrame } from '../src/interaction/paperCurl.ts';
 
 const close = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-8, `${a} ≠ ${b}`);
@@ -73,6 +73,35 @@ test('paper rolls off the surface before its detached exit begins', () => {
   assert.ok(peelFrame(start, .85).exitX < 0);
   assert.ok(peelFrame({ ...start, direction: 'right' }, .85).exitX > 0);
   assert.equal(peelFrame(start, 1).opacity, 0);
+});
+
+test('only detached material belongs in front of the sculpture, including during rollback', () => {
+  for (const direction of ['left', 'right'] as const) for (const progress of [0, .018, .4, .85, 1]) {
+    const frame = { ...base, direction, progress };
+    const patches = curlPatches(frame);
+    const adhered = patches.filter(patch => !patch.lifted);
+    const lifted = patches.filter(patch => patch.lifted);
+    close(adhered.reduce((sum, patch) => sum + patch.width, 0), 400 * (1 - progress));
+    close(lifted.reduce((sum, patch) => sum + patch.width, 0), 400 * progress);
+    assert.ok(adhered.every(patch => patch.lift === 0));
+    assert.ok(lifted.every(patch => patch.lift > 0));
+    const returned = returnFrame(frame, 1);
+    assert.ok(curlPatches(returned).every(patch => !patch.lifted));
+  }
+});
+
+test('section outlines omit the shared crease and disappear with their section', () => {
+  for (const direction of ['left', 'right'] as const) {
+    const frame = { ...base, direction, progress: .4 };
+    for (const surface of ['adhered', 'lifted'] as const) {
+      const edge = paperEdge(frame, 32, surface);
+      assert.ok(edge.startsWith('M '));
+      assert.ok(!edge.endsWith('Z'));
+      assert.ok(!edge.includes('NaN'));
+    }
+    assert.equal(paperEdge({ ...frame, progress: 0 }, 0, 'lifted'), '');
+    assert.equal(paperEdge({ ...frame, progress: 1 }, 0, 'adhered'), '');
+  }
 });
 
 test('an unsuccessful peel unrolls back into perfect registration', () => {

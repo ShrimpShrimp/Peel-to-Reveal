@@ -12,6 +12,12 @@ detaches does it exit in the chosen direction. A failed release unrolls the
 sheet back into its original position. For keyboard control, hold
 Space or Enter and press the left or right arrow; Escape cancels.
 
+The adhered paper stays at its original depth in the stack. Only the lifted
+curl renders in a foreground SVG group after all retained sculpture slices
+and shadows, so it passes over the revealed figure in either direction.
+Both sections share one animation and the same cutout mask; their outlines
+exclude the shared crease.
+
 Choose Shrimp, Courtyard, or Tree with the sculpture switcher. Each scene remembers
 completed peels while the page is open; switching cancels an unfinished hold
 or flight. Reset affects the selected sculpture.

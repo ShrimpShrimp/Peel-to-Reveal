@@ -21,6 +21,7 @@ export type CurlPatch = {
   width: number;
   matrix: [number, number, number, number, number, number];
   lift: number;
+  lifted: boolean;
   shade: number;
   back: boolean;
 };
@@ -74,6 +75,7 @@ export function curlPatches(frame: CurlFrame, vertical = 0): CurlPatch[] {
       key: `patch-${i}`, x, width,
       matrix: [a, b, -.30, .79, left.x - a * x, left.y - b * x],
       lift: center.lift,
+      lifted: center.angle > 0,
       shade: .035 * (1 - Math.cos(center.angle)) + .12 * Math.sin(center.angle),
       back: center.angle > Math.PI / 2,
     });
@@ -103,14 +105,21 @@ export function returnFrame(start: CurlFrame, time: number): CurlFrame {
   return { ...start, progress: start.progress * (1 - t) ** 3, exitX: 0, exitY: 0, opacity: 1 };
 }
 
-export function paperEdge(frame: CurlFrame, vertical = 0): string {
+export function paperEdge(frame: CurlFrame, vertical = 0, surface: 'all' | 'adhered' | 'lifted' = 'all'): string {
+  const crease = WIDTH * (frame.direction === 'left' ? 1 - frame.progress : frame.progress);
+  const outer = surface === 'all' ? WIDTH
+    : (surface === 'lifted') === (frame.direction === 'left') ? WIDTH : 0;
+  const inner = surface === 'all' ? 0 : crease;
+  if (Math.abs(outer - inner) < .001) return '';
   const points: string[] = [];
   for (const y of [0, HEIGHT]) {
     for (let i = 0; i <= 90; i++) {
-      const x = y === 0 ? WIDTH * i / 90 : WIDTH * (1 - i / 90);
+      const t = y === 0 ? i / 90 : 1 - i / 90;
+      const x = inner + (outer - inner) * t;
       const point = paperPoint(x, y, frame, vertical);
       points.push(`${point.x.toFixed(2)} ${point.y.toFixed(2)}`);
     }
   }
-  return `M ${points.join(' L ')} Z`;
+  // The crease is shared, not a cut edge. Leave that side of each section open.
+  return `M ${points.join(' L ')}${surface === 'all' ? ' Z' : ''}`;
 }
