@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef } from 'react';
-import type { CSSProperties } from 'react';
 import { PAPER_BOUNDS, PERSPECTIVE } from '../geometry/paperStack';
 import type { PaperStack } from '../geometry/paperStack';
 import type { PaperScene } from '../geometry/scenes';
 import type { PeelAnimation } from '../hooks/usePeel';
 import { usePaperGesture } from '../hooks/usePaperGesture';
 import type { PaperPose, PeelDirection } from '../interaction/fling';
+import { CurledPaper } from './CurledPaper';
 
 type Props = {
   scene: PaperScene;
@@ -63,9 +63,6 @@ export function PaperSculpture({ scene, stack, peeled, animation, resetRevision,
         <filter id={`${id}-ground`} x="-40%" y="-60%" width="180%" height="220%">
           <feGaussianBlur stdDeviation="12" />
         </filter>
-        <filter id={`${id}-lift`} x="-50%" y="-100%" width="250%" height="300%">
-          <feDropShadow dx="-3" dy="10" stdDeviation="5" floodColor="#624932" floodOpacity=".18" />
-        </filter>
         {paperLayers.map(layer => !layer.inlay && (
           <mask key={layer.id} id={`${id}-outer-${layer.id}`} maskUnits="userSpaceOnUse" x="-2" y="-2" width="404" height="354">
             <path d={PAPER_BOUNDS} fill="white" />
@@ -85,16 +82,6 @@ export function PaperSculpture({ scene, stack, peeled, animation, resetRevision,
         const exposed = removed || flying || inlay;
         const pose = flying ? animation.pose : index === active ? gesture.visual?.pose : undefined;
         const returning = index === active && gesture.visual?.phase === 'returning';
-        const direction = animation?.direction;
-        const sign = direction === 'left' ? -1 : 1;
-        const flightX = pose ? sign * Math.max(640, Math.abs(pose.x) + 460) : 0;
-        const motionStyle = pose ? {
-          '--paper-x': `${pose.x}px`, '--paper-y': `${pose.y}px`,
-          '--paper-angle': `${pose.angle}deg`, '--paper-skew': `${pose.skew}deg`,
-          '--paper-scale': pose.scaleY,
-          '--flight-x': `${flightX}px`, '--flight-y': `${pose.y - 160}px`,
-          '--mid-x': `${pose.x + (flightX - pose.x) * .35}px`, '--mid-y': `${pose.y - 52}px`,
-        } as CSSProperties : undefined;
         return (
           <g key={layer.id} data-slice={layer.id}>
             {layer.path && <>
@@ -108,46 +95,35 @@ export function PaperSculpture({ scene, stack, peeled, animation, resetRevision,
               </g>
             </>}
             {!removed && !inlay && (
-              <g className={flying ? `peel-flight peel-${direction}` : pose ? `paper-held${returning ? ' is-returning' : ''}` : undefined}
-                style={motionStyle} key={flying ? animation.run : 'rest'}
-                data-flying={flying || undefined}
-                onAnimationEnd={event => {
-                  if (flying && event.target === event.currentTarget && event.animationName === `peel-${direction}`) {
-                    onFinish(animation.run);
-                  }
-                }}>
-                <g className={flying ? `peel-curl curl-${direction}` : pose ? 'drag-curl' : undefined}
-                  filter={pose ? `url(#${id}-lift)` : undefined}>
+              <g data-flying={flying || undefined}>
+                {pose ? <CurledPaper id={`${id}-curl-${layer.id}`} mask={`${id}-outer-${layer.id}`} color={layer.color}
+                  vertical={vertical} pose={pose} animation={flying ? animation : undefined} returning={!!returning} onFinish={onFinish} /> : <>
                   <g transform={`translate(0 ${vertical + thickness}) ${PERSPECTIVE}`}>
                     <g mask={`url(#${id}-outer-${layer.id})`}>
                       <path d={PAPER_BOUNDS} fill={layer.color} />
                       <path d={PAPER_BOUNDS} fill="#62402d" opacity=".14" />
                     </g>
                   </g>
-                  <g transform={`translate(0 ${vertical}) ${PERSPECTIVE}`} style={{ color: layer.color }}
-                    className={interactive ? `sheet-button${pose && !returning ? ' is-grabbing' : ''}` : undefined}
-                    ref={interactive ? buttonRef : undefined}
-                    role={index === active ? 'button' : undefined}
-                    aria-label={index === active ? 'Hold and fling top sheet' : undefined}
-                    aria-disabled={index === active ? !!animation || returning : undefined}
-                    tabIndex={interactive ? 0 : undefined}
-                    onPointerDown={interactive ? gesture.pointerDown : undefined}
-                    onPointerMove={interactive ? gesture.pointerMove : undefined}
-                    onPointerUp={interactive ? gesture.pointerUp : undefined}
-                    onPointerCancel={interactive ? gesture.cancel : undefined}
-                    onLostPointerCapture={interactive ? gesture.cancel : undefined}
-                    onBlur={interactive ? gesture.cancel : undefined}
-                    onKeyDown={interactive ? gesture.keyDown : undefined}
-                    onKeyUp={interactive ? gesture.keyUp : undefined}>
-                    <g mask={`url(#${id}-outer-${layer.id})`}>
-                      <path d={PAPER_BOUNDS} fill={layer.color} stroke="#614631" strokeOpacity=".12" strokeWidth=".65" />
-                    </g>
-                    {index === active && <>
-                      <FoldedCorner />
-                      <path className="corner-hit" d="M 338 0 H 400 V 65 H 338 Z" fill="transparent" />
-                    </>}
+                  <g transform={`translate(0 ${vertical}) ${PERSPECTIVE}`} mask={`url(#${id}-outer-${layer.id})`}>
+                    <path d={PAPER_BOUNDS} fill={layer.color} stroke="#614631" strokeOpacity=".12" strokeWidth=".65" />
                   </g>
-                </g>
+                </>}
+                {index === active && <g transform={`translate(0 ${vertical}) ${PERSPECTIVE}`} style={{ color: layer.color }}
+                  className={`sheet-button${pose && !returning ? ' is-grabbing' : ''}`}
+                  ref={buttonRef} role="button" aria-label="Hold and fling top sheet"
+                  aria-disabled={!!animation || returning} tabIndex={interactive ? 0 : undefined}
+                  onPointerDown={interactive ? gesture.pointerDown : undefined}
+                  onPointerMove={interactive ? gesture.pointerMove : undefined}
+                  onPointerUp={interactive ? gesture.pointerUp : undefined}
+                  onPointerCancel={interactive ? gesture.cancel : undefined}
+                  onLostPointerCapture={interactive ? gesture.cancel : undefined}
+                  onBlur={interactive ? gesture.cancel : undefined}
+                  onKeyDown={interactive ? gesture.keyDown : undefined}
+                  onKeyUp={interactive ? gesture.keyUp : undefined}>
+                  <path d={PAPER_BOUNDS} fill="transparent" mask={`url(#${id}-outer-${layer.id})`} />
+                  {!pose && <FoldedCorner />}
+                  <path className="corner-hit" d="M 338 0 H 400 V 65 H 338 Z" fill="transparent" />
+                </g>}
               </g>
             )}
             {scene.shadows?.filter(shadow => shadow.afterSlice === layer.id).map((shadow, shadowIndex) => (

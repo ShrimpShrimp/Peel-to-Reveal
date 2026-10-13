@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PEEL_DURATION } from '../interaction/paperCurl';
 import type { PaperPose, PeelDirection } from '../interaction/fling';
 
 export type PeelAnimation = { layer: number; run: number; direction: PeelDirection; pose: PaperPose };
@@ -27,7 +28,7 @@ export function usePeel(peelSequence: readonly number[], initialPeeled = 0) {
     const nextRun = ++run.current;
     setAnimation({ layer: peelSequence[peeled], run: nextRun, direction, pose });
     // Recover if a browser suspends animations or omits animation-end.
-    fallback.current = setTimeout(() => finish(nextRun), 850);
+    fallback.current = setTimeout(() => finish(nextRun), PEEL_DURATION + 280);
   }, [finish, peeled, peelSequence, total]);
 
   const reset = useCallback(() => {

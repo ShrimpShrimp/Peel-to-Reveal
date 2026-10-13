@@ -37,36 +37,7 @@ h1 { margin: 0; font-family: 'Libre Caslon Display', 'Baskerville', Georgia, ser
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .sheet-button.is-grabbing { cursor: grabbing; }
-.paper-held, .peel-flight { transform-box: view-box; transform-origin: 280px 220px; }
-.paper-held { transform: translate(var(--paper-x), var(--paper-y)) rotate(var(--paper-angle)); }
-.drag-curl { transform-box: view-box; transform-origin: 280px 220px; transform: skewX(var(--paper-skew)) scaleY(var(--paper-scale)); }
-.paper-held.is-returning, .is-returning .drag-curl { transition: transform 250ms cubic-bezier(.2,.85,.3,1); }
-.peel-flight { pointer-events: none; animation-duration: 560ms; animation-timing-function: cubic-bezier(.16,.02,.32,1); animation-fill-mode: both; }
-.peel-left { animation-name: peel-left; }
-.peel-right { animation-name: peel-right; }
-.peel-curl { transform-box: view-box; transform-origin: 280px 220px; animation-duration: 560ms; animation-timing-function: ease-out; animation-fill-mode: both; }
-.curl-left { animation-name: curl-left; }
-.curl-right { animation-name: curl-right; }
-@keyframes peel-left {
-  0% { transform: translate(var(--paper-x), var(--paper-y)) rotate(var(--paper-angle)); opacity: 1; }
-  30% { transform: translate(var(--mid-x), var(--mid-y)) rotate(22deg); opacity: 1; }
-  100% { transform: translate(var(--flight-x), var(--flight-y)) rotate(43deg); opacity: 0; }
-}
-@keyframes peel-right {
-  0% { transform: translate(var(--paper-x), var(--paper-y)) rotate(var(--paper-angle)); opacity: 1; }
-  30% { transform: translate(var(--mid-x), var(--mid-y)) rotate(-22deg); opacity: 1; }
-  100% { transform: translate(var(--flight-x), var(--flight-y)) rotate(-43deg); opacity: 0; }
-}
-@keyframes curl-left {
-  0% { transform: skewX(var(--paper-skew)) scaleY(var(--paper-scale)); }
-  35% { transform: skewX(15deg) scaleY(.67); }
-  100% { transform: skewX(28deg) scaleY(.20); }
-}
-@keyframes curl-right {
-  0% { transform: skewX(var(--paper-skew)) scaleY(var(--paper-scale)); }
-  35% { transform: skewX(-15deg) scaleY(.67); }
-  100% { transform: skewX(-28deg) scaleY(.20); }
-}
+.curled-paper { pointer-events: none; }
 @media (max-width: 700px) {
   main { padding: 44px 22px 28px; }
   .stage { padding-top: 10px; width: min(100%, 560px, max(200px, calc((100svh - 352px) * var(--scene-ratio, 1.2727)))); }
@@ -75,7 +46,5 @@ h1 { margin: 0; font-family: 'Libre Caslon Display', 'Baskerville', Georgia, ser
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; }
-  .peel-flight { animation-duration: 1ms; animation-timing-function: linear; }
-  .peel-curl { animation: none; }
   .sculpture[data-gesture-phase="idle"] .sheet-button:hover .corner-fold { transform: none; }
 }

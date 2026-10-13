@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { assessFling, HOLD_MS, paperPose, REST_POSE } from '../interaction/fling';
+import { RETURN_DURATION } from '../interaction/paperCurl';
 import type { MotionSample, PaperPose, PeelDirection } from '../interaction/fling';
 
 type HeldPointer = {
@@ -50,7 +51,7 @@ export function usePaperGesture({ layer, blocked, resetRevision, onFling }: Opti
     releaseCapture();
     keyboardHold.current = null;
     setVisual({ pose: REST_POSE, phase: 'returning' });
-    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 20 : 280;
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 20 : RETURN_DURATION + 30;
     settling.current = setTimeout(() => {
       settling.current = null;
       setVisual(null);

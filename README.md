@@ -5,8 +5,11 @@ React, TypeScript, SVG and CSS paper-sculpture experiment.
 Hold the top sheet, fling horizontally left or right, and release to peel.
 Success requires a brief hold, sufficient horizontal travel, and a quick
 release. Clicks, short/slow drags, vertical pulls, and cancelled gestures return
-the sheet to the stack without advancing. The paper tracks the pointer while
-held, then curls and exits in the fling direction. For keyboard control, hold
+the sheet to the stack without advancing. Holding and pulling bends the sheet
+over a moving peel front. The adhered portion remains on the surface while
+the lifted paper rolls back over a cylindrical curve; only after it fully
+detaches does it exit in the chosen direction. A failed release unrolls the
+sheet back into its original position. For keyboard control, hold
 Space or Enter and press the left or right arrow; Escape cancels.
 
 Choose Shrimp, Courtyard, or Tree with the sculpture switcher. Each scene remembers
@@ -93,3 +96,13 @@ The workflow installs dependencies, runs the tests, builds with the
 `/Peel-to-Reveal/` asset prefix, and publishes `dist`. The normal local
 preview keeps its root URL: run `npm run dev`. Use `npm run build:pages`
 to reproduce the hosted build.
+
+## Curved peeling
+
+`src/interaction/paperCurl.ts` defines the paper deformation and its mirrored
+left/right motion. `CurledPaper.tsx` projects finely sampled sheet sections
+into the existing SVG perspective and reuses the original paper mask for
+every section. Cutouts stay fixed on the sculpture while holes in the moving
+sheet curve with the paper. Frame updates are isolated to the active sheet.
+Reset and scene switches cancel frame requests and invalidate completion
+timers; reduced motion completes the peel without the rolling sequence.

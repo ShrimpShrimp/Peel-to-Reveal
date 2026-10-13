@@ -1,20 +1,16 @@
 export type PeelDirection = 'left' | 'right';
-export type PaperPose = { x: number; y: number; angle: number; skew: number; scaleY: number };
+export type PaperPose = { x: number; y: number };
 export type MotionSample = { x: number; y: number; time: number };
 
-export const REST_POSE: PaperPose = { x: 0, y: 0, angle: 0, skew: 0, scaleY: 1 };
+export const REST_POSE: PaperPose = { x: 0, y: 0 };
 export const HOLD_MS = 120;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 export function paperPose(dx: number, dy: number): PaperPose {
-  const sign = Math.sign(dx);
   return {
     x: dx * .72,
     y: dy * .35 - Math.min(36, 6 + Math.abs(dx) * .1),
-    angle: -sign * Math.min(14, Math.abs(dx) * .035),
-    skew: -sign * Math.min(12, Math.abs(dx) * .025),
-    scaleY: Math.max(.75, 1 - Math.abs(dx) / 1700),
   };
 }
 
